@@ -61,18 +61,13 @@ func (cmd *scanCmd) Run(fl *pflag.FlagSet) {
 
 	log.Printf("scanning %s...", cmd.host)
 	start := time.Now()
-
-	openPorts, err := scanner.scan(ctx)
-	if err != nil {
-		fl.Usage()
-		log.Fatalf("failed to scan %q: %s", cmd.host, err)
-	}
+	openPorts := scanner.scan(ctx)
+	log.Printf("scan completed in %s", time.Since(start))
 
 	if len(openPorts) == 0 {
 		log.Printf("%q has no exposed ports", cmd.host)
 		return
 	}
-	log.Printf("scan completed in %s", time.Since(start))
 	log.Printf("found %d open ports", len(openPorts))
 	log.Printf("open-ports: %v", openPorts)
 }
@@ -108,7 +103,7 @@ func (s *scanner) add(port int) {
 	s.Unlock()
 }
 
-func (s *scanner) scan(ctx context.Context) ([]int, error) {
+func (s *scanner) scan(ctx context.Context) []int {
 	// Lets use a wait group so we can wait for all of our
 	// goroutines to exit before returning our result.
 	var wg sync.WaitGroup
@@ -128,7 +123,7 @@ func (s *scanner) scan(ctx context.Context) ([]int, error) {
 		}(port)
 	}
 	wg.Wait()
-	return s.openPorts, nil
+	return s.openPorts
 }
 
 func portsToScan(shouldScanAll bool) []int {
